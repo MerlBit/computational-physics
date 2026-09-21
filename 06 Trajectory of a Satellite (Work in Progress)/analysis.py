@@ -9,18 +9,18 @@ For small trajectories, h will be small and for large trajectories, h will be la
 # Package importing
 import numpy as np
 import matplotlib.pyplot as plt
-
-
+from matplotlib.offsetbox import OffsetImage, AnnotationBbox
+from PIL import Image
 
 # Physical Constants
 G = 6.67 * 1e-11
 Me = 6 * 1e24 # kg
 Re = 6.4 * 1e6 # m
-u = 7.95 * 1e3 # m/s
+u = 10.95 * 1e3 # m/s
 
 # Initial Conditions
-phi = np.radians(180)
-theta = np.radians(0)
+phi = np.radians(37)
+theta = np.radians(10)
 x_0, y_0 = Re*np.cos(phi), Re*np.sin(phi)
 vx, vy = u*np.sin(phi + theta), -u*np.cos(phi + theta)
 
@@ -63,7 +63,7 @@ while True:
     t += h
     print(r, phi)
     
-    if r > 20*Re or t > 1e4 or r < Re:
+    if r > 50*Re or t > 1e6 or r < Re:
         break
 
 
@@ -71,10 +71,49 @@ fig, ax = plt.subplots(
     figsize=(7, 7),
     subplot_kw={"projection": "polar"}
 )
-ax.set_ylim(10*Re)
+fig.suptitle("Satellite Trajectory")
+ax.set_rlim(0, 30*Re)
 
 
-earth = ax.plot(np.linspace(0, 2*np.pi, 20), np.full(20, Re))
+
+# Earth image
+earth = np.array(Image.open("C:\\Users\\princ\\Desktop\\Programming\\Git-Repos\\computational-physics\\06 Trajectory of a Satellite\\Assets\\Earth.png").convert("RGBA"))
+
+# Polar grid for the Earth
+N_r = 200
+N_theta = 400
+
+r_edges = np.linspace(0, Re, N_r + 1)
+theta_edges = np.linspace(0, 2*np.pi, N_theta + 1)
+
+# Centers of each polar cell
+r = (r_edges[:-1] + r_edges[1:]) / 2
+theta = (theta_edges[:-1] + theta_edges[1:]) / 2
+
+R, Theta = np.meshgrid(r, theta, indexing="ij")
+
+# Convert polar coordinates to normalized Cartesian coordinates
+X = R * np.cos(Theta) / Re
+Y = R * np.sin(Theta) / Re
+
+# Convert [-1,1] -> image pixel coordinates
+img_h, img_w = earth.shape[:2]
+
+px = ((X + 1) / 2 * (img_w - 1)).astype(int)
+py = ((1 - Y) / 2 * (img_h - 1)).astype(int)
+
+# Get corresponding pixels from Earth image
+earth_polar = earth[py, px]
+
+# Plot Earth
+ax.pcolormesh(
+    theta_edges,
+    r_edges,
+    earth_polar,
+    shading="flat"
+)
+
+
 trajectory = ax.plot(phi_list, r_list)
 
 
